@@ -103,16 +103,13 @@ describe("command palette helpers", () => {
   });
 
   it("supports page-sized jumps while skipping disabled commands", () => {
-    const longList = Array.from(
-      { length: 20 },
-      (_, index): PaletteCommand => ({
-        id: `command.${index}`,
-        title: `Command ${index}`,
-        description: "",
-        category: "navigation",
-        disabled: index === 3 || index === 5,
-      }),
-    );
+    const longList = Array.from({ length: 20 }, (_, index): PaletteCommand => ({
+      id: `command.${index}`,
+      title: `Command ${index}`,
+      description: "",
+      category: "navigation",
+      disabled: index === 3 || index === 5,
+    }));
 
     expect(moveEnabledCommandIndex(longList, 0, 1, 8)).toBe(10);
     expect(moveEnabledCommandIndex(longList, 10, -1, 8)).toBe(0);

@@ -114,8 +114,7 @@ export type CommandProvider<Context = WorkspaceContext> = (
 ) => CommandContribution<Context>[];
 
 export type CommandSource<Context = WorkspaceContext> =
-  | CommandContribution<Context>[]
-  | CommandProvider<Context>;
+  CommandContribution<Context>[] | CommandProvider<Context>;
 
 export interface WorkspaceContext {
   t: (key: MessageKey, params?: Record<string, string | number>) => string;
