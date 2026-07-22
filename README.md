@@ -59,8 +59,8 @@ license.
 
 | Target           | First-beta policy               | Notes                                                                             |
 | ---------------- | ------------------------------- | --------------------------------------------------------------------------------- |
-| macOS            | Signed beta artifacts           | Developer ID signed and notarized DMG from GitHub Releases.                       |
-| Linux            | Signed beta artifacts           | AppImage/deb/rpm artifacts with GPG signatures and signed checksums.              |
+| macOS            | Signed beta artifacts           | Apple silicon DMG, Developer ID signed and Apple-notarized, from GitHub Releases. |
+| Linux            | Signed beta artifacts           | x86-64 AppImage/deb/rpm artifacts with GPG signatures and signed checksums.       |
 | Windows          | Source build only               | Official Windows binaries are deferred until code signing is ready.               |
 | CLI              | GitHub Release tarball for beta | npm/Homebrew publication can wait until the release cadence is stable.            |
 | Package managers | Templates prepared              | Homebrew, APT/RPM, WinGet, AppStream, and updater templates live in `packaging/`. |
