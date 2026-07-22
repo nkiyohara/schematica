@@ -8,11 +8,11 @@ published until code signing is ready.
 
 ## Artifact Signing
 
-| Platform | Status                            | Notes                                                                                              |
-| -------- | --------------------------------- | -------------------------------------------------------------------------------------------------- |
-| macOS    | Developer ID signed and notarized | Uses the `macos-signing` GitHub environment.                                                       |
-| Linux    | GPG signed                        | AppImage signing is enabled, and Linux artifacts plus `SHA256SUMS` get detached `.asc` signatures. |
-| Windows  | Not published                     | Unsigned Windows builds are smoke-tested only; official binaries wait for code signing.            |
+| Platform | Status                            | Notes                                                                                      |
+| -------- | --------------------------------- | ------------------------------------------------------------------------------------------ |
+| macOS    | Developer ID signed and notarized | Apple silicon (`arm64`) DMG; uses the `macos-signing` GitHub environment.                  |
+| Linux    | GPG signed                        | x86-64 artifacts; AppImage, deb, rpm, and `SHA256SUMS` receive detached `.asc` signatures. |
+| Windows  | Not published                     | Unsigned Windows builds are smoke-tested only; official binaries wait for code signing.    |
 
 Signing secrets are not stored in the repository. The repository only contains
 public workflow wiring, public key material, and user-facing verification

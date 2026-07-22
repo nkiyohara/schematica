@@ -7,6 +7,9 @@ on:
     paths:
       - "site/**"
       - ".github/workflows/pages.yml"
+  release:
+    types:
+      - published
   workflow_dispatch:
 
 permissions:
@@ -25,6 +28,43 @@ jobs:
 
       - name: Configure Pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
+
+      - name: Generate public release manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          manifest_path="$(mktemp)"
+          if gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=20" \
+            --jq '
+              map(select(.draft == false)) | first as $release |
+              if $release == null then
+                { release: null }
+              else
+                {
+                  release: {
+                    version: $release.tag_name,
+                    prerelease: $release.prerelease,
+                    publishedAt: $release.published_at,
+                    htmlUrl: $release.html_url,
+                    assets: [
+                      $release.assets[] |
+                      {
+                        name: .name,
+                        url: .browser_download_url,
+                        size: .size,
+                        digest: .digest
+                      }
+                    ]
+                  }
+                }
+              end
+            ' > "$manifest_path"; then
+            mv "$manifest_path" site/release-manifest.json
+          else
+            rm -f "$manifest_path"
+            echo "Could not refresh release metadata; using the safe no-release fallback."
+          fi
 
       - name: Upload static site
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
