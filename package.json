@@ -1,6 +1,6 @@
 {
   "name": "schematica",
-  "version": "0.1.0-beta.10",
+  "version": "0.1.0-beta.11",
   "private": true,
   "description": "Fast, lightweight schema-driven config editor for YAML, JSON, and TOML.",
   "license": "MIT",

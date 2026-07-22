@@ -91,11 +91,54 @@ jobs:
       - run: corepack pnpm check
       - run: cargo check --workspace --locked
 
+  release-draft:
+    name: Prepare one release draft
+    needs: qa
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      release_id: ${{ steps.release.outputs.release_id }}
+      is_draft: ${{ steps.release.outputs.is_draft }}
+    steps:
+      - id: release
+        name: Create or reuse the release draft
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          release_id="$(
+            gh api --paginate "repos/$GH_REPO/releases?per_page=100" \
+              --jq ".[] | select(.tag_name == \"$RELEASE_TAG\") | .id" \
+              | head -n 1
+          )"
+
+          if [[ -z "$release_id" ]]; then
+            release_id="$(
+              gh api --method POST "repos/$GH_REPO/releases" \
+                -f tag_name="$RELEASE_TAG" \
+                -f name="Schematica $RELEASE_TAG" \
+                -F draft=true \
+                -F prerelease=true \
+                --jq .id
+            )"
+          fi
+
+          is_draft="$(gh api "repos/$GH_REPO/releases/$release_id" --jq .draft)"
+          echo "release_id=$release_id" >> "$GITHUB_OUTPUT"
+          echo "is_draft=$is_draft" >> "$GITHUB_OUTPUT"
+          gh api "repos/$GH_REPO/releases/$release_id" \
+            --jq '{id, tag_name, draft, prerelease, html_url}'
+
   desktop-macos:
     name: Tauri macOS signed bundle
     needs:
       - runner-plan
       - qa
+      - release-draft
+    if: needs.release-draft.outputs.is_draft == 'true'
     environment: macos-signing
     permissions:
       contents: write
@@ -167,6 +210,7 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_SIGNING_IDENTITY: ${{ vars.APPLE_SIGNING_IDENTITY }}
         with:
+          releaseId: ${{ needs.release-draft.outputs.release_id }}
           projectPath: apps/desktop
           tagName: ${{ github.ref_name }}
           releaseName: "Schematica ${{ github.ref_name }}"
@@ -176,7 +220,7 @@ jobs:
             Downloads:
             - macOS Apple Silicon: the `aarch64.dmg` asset
             - Linux: AppImage, deb, or rpm
-            - CLI: `schematica-cli-${{ github.ref_name }}.tar.gz`
+            - CLI: `schematica-cli-${{ github.ref_name }}.tar.gz` with its matching `.asc` signature
 
             Windows note:
             Official Windows binaries are not published while code signing is pending. Windows builds are still smoke-tested in CI.
@@ -195,12 +239,44 @@ jobs:
           releaseDraft: true
           prerelease: true
           args: "--ci"
+      - name: Verify macOS signature and notarization ticket
+        shell: bash
+        run: |
+          shopt -s nullglob
+          app_bundles=(target/release/bundle/macos/*.app)
+          disk_images=(target/release/bundle/dmg/*.dmg)
+
+          if [[ "${#app_bundles[@]}" -ne 1 || "${#disk_images[@]}" -ne 1 ]]; then
+            echo "Expected exactly one macOS app bundle and one DMG." >&2
+            exit 1
+          fi
+
+          codesign --verify --deep --strict --verbose=2 "${app_bundles[0]}"
+          spctl --assess --type exec --verbose=4 "${app_bundles[0]}"
+          xcrun stapler validate "${disk_images[0]}"
+          spctl \
+            --assess \
+            --type open \
+            --context context:primary-signature \
+            --verbose=4 \
+            "${disk_images[0]}"
+      - name: Remove temporary macOS signing keychain
+        if: always() && needs.runner-plan.outputs.macos_runner_kind == 'hosted'
+        shell: bash
+        run: |
+          keychain_path="$RUNNER_TEMP/schematica-signing.keychain-db"
+          security delete-keychain "$keychain_path" 2>/dev/null || true
+          rm -f \
+            "$RUNNER_TEMP/developer-id-application.p12" \
+            "$RUNNER_TEMP/developer-id-g2.der"
 
   desktop-linux:
     name: Tauri Linux signed bundles
     needs:
       - runner-plan
       - qa
+      - release-draft
+    if: needs.release-draft.outputs.is_draft == 'true'
     environment: linux-signing
     permissions:
       contents: write
@@ -237,15 +313,16 @@ jobs:
           restore-keys: ${{ runner.os }}-pnpm-store-
       - run: corepack pnpm install --frozen-lockfile
       - name: Import GPG release signing key
-        if: needs.runner-plan.outputs.linux_runner_kind == 'hosted'
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
         shell: bash
         run: |
-          mkdir -p ~/.gnupg
-          chmod 700 ~/.gnupg
+          export GNUPGHOME="$RUNNER_TEMP/schematica-release-gnupg"
+          mkdir -p "$GNUPGHOME"
+          chmod 700 "$GNUPGHOME"
           printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import
           gpg --batch --list-secret-keys --keyid-format LONG "${{ vars.GPG_FINGERPRINT }}"
+          echo "GNUPGHOME=$GNUPGHOME" >> "$GITHUB_ENV"
       - uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -254,6 +331,7 @@ jobs:
           APPIMAGETOOL_SIGN_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
           APPIMAGETOOL_FORCE_SIGN: "1"
         with:
+          releaseId: ${{ needs.release-draft.outputs.release_id }}
           projectPath: apps/desktop
           tagName: ${{ github.ref_name }}
           releaseName: "Schematica ${{ github.ref_name }}"
@@ -263,7 +341,7 @@ jobs:
             Downloads:
             - macOS Apple Silicon: the `aarch64.dmg` asset
             - Linux: AppImage, deb, or rpm
-            - CLI: `schematica-cli-${{ github.ref_name }}.tar.gz`
+            - CLI: `schematica-cli-${{ github.ref_name }}.tar.gz` with its matching `.asc` signature
 
             Windows note:
             Official Windows binaries are not published while code signing is pending. Windows builds are still smoke-tested in CI.
@@ -335,6 +413,11 @@ jobs:
             --detach-sign \
             --output SHA256SUMS.asc \
             SHA256SUMS
+
+          for artifact in "${release_artifacts[@]}"; do
+            gpg --batch --verify "$artifact.asc" "$artifact"
+          done
+          gpg --batch --verify SHA256SUMS.asc SHA256SUMS
       - uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -350,12 +433,25 @@ jobs:
             target/release/bundle/deb/*.deb.asc
             target/release/bundle/rpm/*.rpm.asc
             docs/release-signing/schematica-linux-gpg-public.asc
+      - name: Remove temporary Linux signing keyring
+        if: always()
+        shell: bash
+        run: |
+          gpg_home="$RUNNER_TEMP/schematica-release-gnupg"
+          if [[ -z "$RUNNER_TEMP" || "$gpg_home" != "$RUNNER_TEMP/"* ]]; then
+            echo "Refusing to remove an unexpected GPG home: $gpg_home" >&2
+            exit 1
+          fi
+          gpgconf --homedir "$gpg_home" --kill all 2>/dev/null || true
+          rm -rf -- "$gpg_home"
 
   desktop-windows-smoke:
     name: Tauri Windows smoke build
     needs:
       - runner-plan
       - qa
+      - release-draft
+    if: needs.release-draft.outputs.is_draft == 'true'
     permissions:
       contents: read
     runs-on: ${{ fromJSON(needs.runner-plan.outputs.windows_runs_on) }}
@@ -387,12 +483,14 @@ jobs:
     name: CLI release tarball
     needs:
       - runner-plan
+      - release-draft
       - desktop-macos
       - desktop-linux
       - desktop-windows-smoke
+    if: needs.release-draft.outputs.is_draft == 'true'
+    environment: linux-signing
     runs-on: ${{ fromJSON(needs.runner-plan.outputs.cli_runs_on) }}
     permissions:
-      actions: write
       contents: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -409,6 +507,17 @@ jobs:
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: ${{ runner.os }}-pnpm-store-
       - run: corepack pnpm install --frozen-lockfile
+      - name: Import GPG release signing key
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+        shell: bash
+        run: |
+          export GNUPGHOME="$RUNNER_TEMP/schematica-release-gnupg"
+          mkdir -p "$GNUPGHOME"
+          chmod 700 "$GNUPGHOME"
+          printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import
+          gpg --batch --list-secret-keys --keyid-format LONG "${{ vars.GPG_FINGERPRINT }}"
+          echo "GNUPGHOME=$GNUPGHOME" >> "$GITHUB_ENV"
       - run: corepack pnpm --filter @schematica/cli build
       - name: Smoke-test standalone CLI artifact
         shell: bash
@@ -417,6 +526,25 @@ jobs:
           cp packages/cli/dist/index.cjs "$artifact_dir/schematica.cjs"
           (cd "$artifact_dir" && node schematica.cjs --help)
       - run: tar -czf schematica-cli-${{ github.ref_name }}.tar.gz -C packages/cli dist package.json
+      - name: Sign CLI release tarball
+        env:
+          GPG_FINGERPRINT: ${{ vars.GPG_FINGERPRINT }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        shell: bash
+        run: |
+          gpg \
+            --batch \
+            --yes \
+            --pinentry-mode loopback \
+            --passphrase "$GPG_PASSPHRASE" \
+            --local-user "$GPG_FINGERPRINT" \
+            --armor \
+            --detach-sign \
+            --output schematica-cli-${{ github.ref_name }}.tar.gz.asc \
+            schematica-cli-${{ github.ref_name }}.tar.gz
+          gpg --batch --verify \
+            schematica-cli-${{ github.ref_name }}.tar.gz.asc \
+            schematica-cli-${{ github.ref_name }}.tar.gz
       - uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -429,7 +557,7 @@ jobs:
             Downloads:
             - macOS Apple Silicon: the `aarch64.dmg` asset
             - Linux: AppImage, deb, or rpm
-            - CLI: `schematica-cli-${{ github.ref_name }}.tar.gz`
+            - CLI: `schematica-cli-${{ github.ref_name }}.tar.gz` with its matching `.asc` signature
 
             Windows note:
             Official Windows binaries are not published while code signing is pending. Windows builds are still smoke-tested in CI.
@@ -447,28 +575,103 @@ jobs:
             Linux artifacts include GPG detached signatures and signed SHA256 checksums. The public key is available in `docs/release-signing/schematica-linux-gpg-public.asc`.
           draft: true
           prerelease: true
-          files: schematica-cli-${{ github.ref_name }}.tar.gz
+          files: |
+            schematica-cli-${{ github.ref_name }}.tar.gz
+            schematica-cli-${{ github.ref_name }}.tar.gz.asc
+      - name: Verify complete release asset set
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_ID: ${{ needs.release-draft.outputs.release_id }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          asset_names="$(
+            gh api --paginate "repos/$GH_REPO/releases/$RELEASE_ID/assets?per_page=100" \
+              --jq '.[].name' \
+              | sort -u
+          )"
+          printf '%s\n' "$asset_names"
+
+          require_asset() {
+            if ! grep -Fqx -- "$1" <<<"$asset_names"; then
+              echo "Missing required release asset: $1" >&2
+              exit 1
+            fi
+          }
+
+          require_one_suffix() {
+            local suffix="$1"
+            local matches
+            matches="$(grep -E "${suffix}$" <<<"$asset_names" || true)"
+            if [[ -z "$matches" ]]; then
+              echo "No release asset ends with $suffix" >&2
+              exit 1
+            fi
+            printf '%s\n' "$matches"
+          }
+
+          require_one_suffix '\.dmg'
+          require_asset "schematica-cli-$RELEASE_TAG.tar.gz"
+          require_asset "schematica-cli-$RELEASE_TAG.tar.gz.asc"
+          require_asset "SHA256SUMS"
+          require_asset "SHA256SUMS.asc"
+          require_asset "schematica-linux-gpg-public.asc"
+
+          for suffix in AppImage deb rpm; do
+            while IFS= read -r artifact; do
+              require_asset "$artifact.asc"
+            done < <(require_one_suffix "\\.$suffix")
+          done
+
+          if grep -Eiq '\.(exe|msi)$' <<<"$asset_names"; then
+            echo "Unsigned Windows installer found in the release asset set." >&2
+            exit 1
+          fi
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
+          RELEASE_ID: ${{ needs.release-draft.outputs.release_id }}
           RELEASE_TAG: ${{ github.ref_name }}
         shell: bash
         run: |
-          release_id="$(
-            gh api "repos/$GH_REPO/releases" \
-              --jq ".[] | select(.tag_name == \"$RELEASE_TAG\" and .draft == true) | .id" \
-              | head -n 1
-          )"
-          if [[ -z "$release_id" ]]; then
-            echo "Could not find a draft release for $RELEASE_TAG." >&2
+          is_draft="$(gh api "repos/$GH_REPO/releases/$RELEASE_ID" --jq .draft)"
+          if [[ "$is_draft" == "true" ]]; then
+            gh api -X PATCH "repos/$GH_REPO/releases/$RELEASE_ID" \
+              -F draft=false \
+              -F prerelease=true \
+              -f name="Schematica $RELEASE_TAG"
+          else
+            echo "Release $RELEASE_TAG is already published; skipping publish transition."
+          fi
+      - name: Remove temporary CLI signing keyring
+        if: always()
+        shell: bash
+        run: |
+          gpg_home="$RUNNER_TEMP/schematica-release-gnupg"
+          if [[ -z "$RUNNER_TEMP" || "$gpg_home" != "$RUNNER_TEMP/"* ]]; then
+            echo "Refusing to remove an unexpected GPG home: $gpg_home" >&2
             exit 1
           fi
-          gh api -X PATCH "repos/$GH_REPO/releases/$release_id" \
-            -f draft=false \
-            -f prerelease=true \
-            -f name="Schematica $RELEASE_TAG"
-      - name: Refresh installation page
+          gpgconf --homedir "$gpg_home" --kill all 2>/dev/null || true
+          rm -rf -- "$gpg_home"
+
+  refresh-pages:
+    name: Refresh installation page
+    needs:
+      - release-draft
+      - cli
+    if: >-
+      always() &&
+      needs.release-draft.result == 'success' &&
+      (needs.release-draft.outputs.is_draft == 'false' || needs.cli.result == 'success')
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - name: Dispatch GitHub Pages deployment
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh workflow run pages.yml --ref main

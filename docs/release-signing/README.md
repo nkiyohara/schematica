@@ -31,6 +31,12 @@ Verify an individual detached signature:
 gpg --verify artifact.asc artifact
 ```
 
+For the CLI tarball, download both files and verify them together:
+
+```sh
+gpg --verify schematica-cli-vX.Y.Z.tar.gz.asc schematica-cli-vX.Y.Z.tar.gz
+```
+
 The private key, passphrase, and revocation certificate are not stored in this
 repository. They are kept in maintainer-controlled 1Password storage and exposed
 to CI only through the `linux-signing` GitHub environment.
