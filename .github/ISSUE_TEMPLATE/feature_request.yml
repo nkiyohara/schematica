@@ -1,0 +1,41 @@
+name: Feature request
+description: Propose a focused Schematica improvement.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for specific product, CLI, packaging, or schema-editing improvements.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Desktop editor
+        - CLI
+        - JSON Schema support
+        - SSH or remote files
+        - Packaging or distribution
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What workflow is hard or missing today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What should Schematica do?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Optional, but useful for scope decisions.

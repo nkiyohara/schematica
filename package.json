@@ -1,0 +1,36 @@
+{
+  "name": "schematica",
+  "version": "0.1.0-beta.10",
+  "private": true,
+  "description": "Fast, lightweight schema-driven config editor for YAML, JSON, and TOML.",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@11.5.3",
+  "engines": {
+    "node": ">=24.0.0",
+    "pnpm": ">=11.0.0"
+  },
+  "scripts": {
+    "build": "corepack pnpm -r build",
+    "check": "node --test scripts/*.test.mjs && corepack pnpm -r check",
+    "dev": "corepack pnpm --filter @schematica/desktop dev",
+    "desktop:build": "corepack pnpm --filter @schematica/desktop tauri:build",
+    "desktop:install-local": "sh scripts/install-local-appimage.sh",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "icons": "node scripts/generate-icons.mjs",
+    "lint": "eslint .",
+    "schematica": "node packages/cli/dist/index.cjs",
+    "test": "corepack pnpm -r test",
+    "typecheck": "corepack pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@types/node": "^25.9.3",
+    "eslint": "^9.39.4",
+    "globals": "^16.5.0",
+    "prettier": "^3.8.4",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.61.0"
+  }
+}

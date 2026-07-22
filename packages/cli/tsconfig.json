@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "../..",
+    "outDir": "dist",
+    "allowJs": true,
+    "checkJs": true,
+    "types": ["node"],
+    "paths": {
+      "@schematica/core": ["../core/src/index.ts"]
+    }
+  },
+  "include": ["src", "test", "tsup.config.ts"]
+}

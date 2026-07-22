@@ -1,0 +1,29 @@
+{
+  "name": "@schematica/cli",
+  "description": "Command-line interface for Schematica.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "schematica": "./dist/index.cjs"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "corepack pnpm --filter @schematica/core build && tsup",
+    "check": "corepack pnpm --filter @schematica/core build && tsc --noEmit && tsup && node --test test/*.test.mjs",
+    "start": "node dist/index.cjs",
+    "test": "corepack pnpm --filter @schematica/core build && tsup && node --test test/*.test.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@schematica/core": "workspace:*",
+    "commander": "^15.0.0",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.3",
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.3"
+  }
+}

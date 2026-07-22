@@ -1,0 +1,19 @@
+{
+  "version": "0.1.0",
+  "notes": "Initial signed updater manifest example.",
+  "pub_date": "2026-06-11T00:00:00Z",
+  "platforms": {
+    "darwin-x86_64": {
+      "signature": "CONTENTS_OF_DMG_OR_APP_TAR_SIG",
+      "url": "https://github.com/nkiyohara/schematica/releases/download/v0.1.0/Schematica_0.1.0_x64.dmg"
+    },
+    "darwin-aarch64": {
+      "signature": "CONTENTS_OF_DMG_OR_APP_TAR_SIG",
+      "url": "https://github.com/nkiyohara/schematica/releases/download/v0.1.0/Schematica_0.1.0_aarch64.dmg"
+    },
+    "linux-x86_64": {
+      "signature": "CONTENTS_OF_APPIMAGE_SIG",
+      "url": "https://github.com/nkiyohara/schematica/releases/download/v0.1.0/Schematica_0.1.0_amd64.AppImage"
+    }
+  }
+}

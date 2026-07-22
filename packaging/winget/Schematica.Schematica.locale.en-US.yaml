@@ -1,0 +1,17 @@
+PackageIdentifier: Schematica.Schematica
+PackageVersion: 0.1.0
+PackageLocale: en-US
+Publisher: Schematica
+PublisherUrl: https://github.com/nkiyohara/schematica
+PackageName: Schematica
+PackageUrl: https://github.com/nkiyohara/schematica
+License: MIT
+ShortDescription: Schema-driven YAML, JSON, and TOML config editor.
+Tags:
+  - config
+  - json
+  - jsonschema
+  - toml
+  - yaml
+ManifestType: defaultLocale
+ManifestVersion: 1.10.0

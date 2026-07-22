@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Schematica is a schema-aware desktop editor and CLI for safer YAML, JSON, and TOML configuration workflows."
+    />
+    <meta name="theme-color" content="#f5f7fb" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Schematica — Config files, made difficult to get wrong" />
+    <meta
+      property="og:description"
+      content="Edit with schema-generated controls, validate before a run, and compare experiment configurations semantically."
+    />
+    <meta property="og:url" content="https://nkiyohara.github.io/schematica/" />
+    <meta
+      property="og:image"
+      content="https://nkiyohara.github.io/schematica/assets/screenshots/schema-driven-editor.png"
+    />
+    <meta
+      property="og:image:alt"
+      content="Schematica editing a SLURM training configuration with a schema-generated batch-size slider set to 128 samples, a logarithmic learning-rate control, and syntax-highlighted YAML side by side."
+    />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="ja_JP" />
+    <meta property="og:locale:alternate" content="es_ES" />
+    <meta property="og:locale:alternate" content="zh_CN" />
+    <meta property="og:locale:alternate" content="ko_KR" />
+    <meta property="og:locale:alternate" content="fr_FR" />
+    <meta property="og:locale:alternate" content="de_DE" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Schematica — Config files, made difficult to get wrong" />
+    <meta
+      name="twitter:description"
+      content="Edit with schema-generated controls, validate before a run, and compare experiment configurations semantically."
+    />
+    <meta
+      name="twitter:image"
+      content="https://nkiyohara.github.io/schematica/assets/screenshots/schema-driven-editor.png"
+    />
+    <meta
+      name="twitter:image:alt"
+      content="Schematica editing a SLURM training configuration with a schema-generated batch-size slider set to 128 samples, a logarithmic learning-rate control, and syntax-highlighted YAML side by side."
+    />
+    <link rel="canonical" href="https://nkiyohara.github.io/schematica/" />
+    <link rel="alternate" hreflang="en" href="https://nkiyohara.github.io/schematica/" />
+    <link rel="alternate" hreflang="ja" href="https://nkiyohara.github.io/schematica/?lang=ja" />
+    <link rel="alternate" hreflang="es" href="https://nkiyohara.github.io/schematica/?lang=es" />
+    <link
+      rel="alternate"
+      hreflang="zh-Hans"
+      href="https://nkiyohara.github.io/schematica/?lang=zh-CN"
+    />
+    <link rel="alternate" hreflang="ko" href="https://nkiyohara.github.io/schematica/?lang=ko" />
+    <link rel="alternate" hreflang="fr" href="https://nkiyohara.github.io/schematica/?lang=fr" />
+    <link rel="alternate" hreflang="de" href="https://nkiyohara.github.io/schematica/?lang=de" />
+    <link rel="alternate" hreflang="x-default" href="https://nkiyohara.github.io/schematica/" />
+    <link rel="icon" href="assets/schematica-icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="i18n.js" defer></script>
+    <title>Schematica — Safer configuration for research and engineering</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main" data-i18n="a11y.skip">Skip to content</a>
+
+    <header class="site-header">
+      <nav class="nav shell" aria-label="Primary navigation" data-i18n-aria-label="a11y.primaryNav">
+        <a class="brand" href="#top" aria-label="Schematica home" data-i18n-aria-label="a11y.home">
+          <img src="assets/schematica-icon.svg" alt="" width="38" height="38" />
+          <span>Schematica</span>
+        </a>
+        <div class="nav-links">
+          <a href="#workflow" data-i18n="nav.workflow">Workflow</a>
+          <a href="#compare" data-i18n="nav.compare">Compare</a>
+          <a href="#schemas" data-i18n="nav.schemas">Schemas</a>
+          <label class="language-picker">
+            <span class="sr-only" data-i18n="nav.language">Language</span>
+            <select id="language-select" aria-label="Language" data-i18n-aria-label="nav.language">
+              <option value="en">English</option>
+              <option value="ja">日本語</option>
+              <option value="es">Español</option>
+              <option value="zh-CN">简体中文</option>
+              <option value="ko">한국어</option>
+              <option value="fr">Français</option>
+              <option value="de">Deutsch</option>
+            </select>
+          </label>
+          <a
+            class="nav-github"
+            href="https://github.com/nkiyohara/schematica"
+            data-i18n="nav.github"
+            >GitHub</a
+          >
+        </div>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="hero shell" id="top">
+        <div class="hero-copy">
+          <p class="eyebrow">
+            <span></span><span data-i18n="hero.eyebrow">Schema-aware config workbench</span>
+          </p>
+          <h1 data-i18n="hero.title">Config files, made difficult to get wrong.</h1>
+          <p class="hero-lede" data-i18n="hero.lede">
+            Schematica turns YAML, JSON, and TOML into a guided editing workflow—so researchers and
+            engineers can catch configuration mistakes before an experiment, deployment, or batch
+            job begins.
+          </p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="https://github.com/nkiyohara/schematica">
+              <span data-i18n="hero.github">View on GitHub</span>
+              <span aria-hidden="true">↗</span>
+            </a>
+            <a class="button button-secondary" href="#workflow" data-i18n="hero.workflow"
+              >See how it works</a
+            >
+          </div>
+          <ul
+            class="hero-proof"
+            aria-label="Supported workflows"
+            data-i18n-aria-label="a11y.supportedWorkflows"
+          >
+            <li>
+              <span aria-hidden="true">✓</span
+              ><span data-i18n="hero.formats">YAML, JSON &amp; TOML</span>
+            </li>
+            <li>
+              <span aria-hidden="true">✓</span
+              ><span data-i18n="hero.surfaces">Desktop &amp; CLI</span>
+            </li>
+            <li>
+              <span aria-hidden="true">✓</span
+              ><span data-i18n="hero.locations">Local &amp; SSH</span>
+            </li>
+          </ul>
+        </div>
+
+        <figure class="product-shot hero-shot">
+          <div class="shot-bar" aria-hidden="true">
+            <span></span><span></span><span></span>
+            <small>slurm.yaml</small>
+          </div>
+          <a
+            href="assets/screenshots/schema-driven-editor.png"
+            aria-label="Open the schema-driven editor screenshot at full size"
+            data-i18n-aria-label="hero.imageAction"
+          >
+            <img
+              src="assets/screenshots/schema-driven-editor.png"
+              width="1280"
+              height="820"
+              alt="Schematica editing a SLURM training configuration with a schema-generated batch-size slider set to 128 samples, a logarithmic learning-rate control, and syntax-highlighted YAML side by side."
+              data-i18n-alt="hero.imageAlt"
+              fetchpriority="high"
+            />
+          </a>
+          <figcaption>
+            <strong data-i18n="hero.captionTitle">One value, two trustworthy views.</strong>
+            <span data-i18n="hero.captionBody"
+              >Schema-generated controls and the source file stay in sync.</span
+            >
+          </figcaption>
+        </figure>
+      </section>
+
+      <section
+        class="trust-strip"
+        aria-label="Core principles"
+        data-i18n-aria-label="a11y.corePrinciples"
+      >
+        <div class="shell trust-grid">
+          <p data-i18n="trust.intro">Built for configuration-heavy work</p>
+          <div>
+            <strong data-i18n="trust.validate">Validate</strong
+            ><span data-i18n="trust.validateDetail">before compute starts</span>
+          </div>
+          <div>
+            <strong data-i18n="trust.compare">Compare</strong
+            ><span data-i18n="trust.compareDetail">intent, not formatting</span>
+          </div>
+          <div>
+            <strong data-i18n="trust.inspect">Inspect</strong
+            ><span data-i18n="trust.inspectDetail">every source change</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section shell" id="workflow">
+        <div class="section-heading">
+          <p class="eyebrow"><span></span><span data-i18n="workflow.eyebrow">A safer loop</span></p>
+          <h2 data-i18n="workflow.title">From “which config ran?” to a workflow you can trust.</h2>
+          <p data-i18n="workflow.intro">
+            Configuration is part of the experiment. Schematica makes its constraints, differences,
+            and final values visible without taking the file away from you.
+          </p>
+        </div>
+
+        <ol class="workflow-grid">
+          <li>
+            <span class="step-number">01</span>
+            <div class="step-icon" aria-hidden="true">⌁</div>
+            <h3 data-i18n="workflow.openTitle">Open where the work lives</h3>
+            <p data-i18n="workflow.openBody">
+              Open local files or browse a remote host over SSH. Keep multiple run profiles in one
+              workspace.
+            </p>
+          </li>
+          <li>
+            <span class="step-number">02</span>
+            <div class="step-icon" aria-hidden="true">◇</div>
+            <h3 data-i18n="workflow.editTitle">Edit with guardrails</h3>
+            <p data-i18n="workflow.editBody">
+              Enums, ranges, required fields, units, defaults, and descriptions become clear
+              controls.
+            </p>
+          </li>
+          <li>
+            <span class="step-number">03</span>
+            <div class="step-icon" aria-hidden="true">⇄</div>
+            <h3 data-i18n="workflow.compareTitle">Review meaningful differences</h3>
+            <p data-i18n="workflow.compareBody">
+              Compare values by configuration path, independent of whitespace, key order, or file
+              format.
+            </p>
+          </li>
+          <li>
+            <span class="step-number">04</span>
+            <div class="step-icon" aria-hidden="true">✓</div>
+            <h3 data-i18n="workflow.validateTitle">Validate before the run</h3>
+            <p data-i18n="workflow.validateBody">
+              Use the same schema semantics in the desktop app, terminal, scripts, and CI.
+            </p>
+          </li>
+        </ol>
+      </section>
+
+      <section class="section feature-section" id="compare">
+        <div class="shell feature-layout feature-layout-compare">
+          <div class="feature-copy">
+            <p class="eyebrow">
+              <span></span><span data-i18n="compare.eyebrow">Semantic comparison</span>
+            </p>
+            <h2 data-i18n="compare.title">See the change that changes the result.</h2>
+            <p data-i18n="compare.body">
+              A line diff makes structured data noisy. Schematica compares parsed values by path,
+              then separates changed, missing, and identical settings.
+            </p>
+            <ul class="check-list">
+              <li data-i18n="compare.pointBaseline">Choose a baseline explicitly</li>
+              <li data-i18n="compare.pointMany">Compare two or many configurations</li>
+              <li data-i18n="compare.pointFilter">Filter to differences or inspect every value</li>
+              <li data-i18n="compare.pointCli">Use the same comparison engine from the CLI</li>
+            </ul>
+          </div>
+          <figure class="product-shot compare-shot">
+            <div class="shot-bar" aria-hidden="true">
+              <span></span><span></span><span></span>
+              <small data-i18n="compare.windowTitle">Semantic diff</small>
+            </div>
+            <a
+              href="assets/screenshots/semantic-compare.png"
+              aria-label="Open the semantic comparison screenshot at full size"
+              data-i18n-aria-label="compare.imageAction"
+            >
+              <img
+                src="assets/screenshots/semantic-compare.png"
+                width="1280"
+                height="820"
+                alt="Schematica comparing baseline.yaml and slurm.yaml, showing two changed values and one missing value in a semantic table."
+                data-i18n-alt="compare.imageAlt"
+                loading="lazy"
+              />
+            </a>
+          </figure>
+        </div>
+      </section>
+
+      <section class="section shell" id="schemas">
+        <div class="schema-intro">
+          <div class="section-heading compact">
+            <p class="eyebrow">
+              <span></span><span data-i18n="schemas.eyebrow">Schema, when you have one</span>
+            </p>
+            <h2 data-i18n="schemas.title">Bring a schema. Build one. Or start without one.</h2>
+          </div>
+          <div class="schema-modes">
+            <article>
+              <span class="mode-label" data-i18n="schemas.withLabel">With a schema</span>
+              <h3 data-i18n="schemas.withTitle">Turn constraints into a usable form.</h3>
+              <p data-i18n="schemas.withBody">
+                JSON Schema drives validation and controls. Optional x-ui hints add units, ordering,
+                notes, and scale without making the schema proprietary.
+              </p>
+            </article>
+            <article>
+              <span class="mode-label mode-label-muted" data-i18n="schemas.withoutLabel"
+                >Without a schema</span
+              >
+              <h3 data-i18n="schemas.withoutTitle">Keep editing, then add structure when ready.</h3>
+              <p data-i18n="schemas.withoutBody">
+                Schematica can infer a practical form for ordinary documents, preserve access to the
+                raw editor, and let you attach or design a schema later.
+              </p>
+            </article>
+          </div>
+        </div>
+
+        <figure class="product-shot designer-shot">
+          <div class="shot-bar" aria-hidden="true">
+            <span></span><span></span><span></span>
+            <small data-i18n="schemas.windowTitle">Schema tools</small>
+          </div>
+          <a
+            href="assets/screenshots/schema-designer.png"
+            aria-label="Open the schema designer screenshot at full size"
+            data-i18n-aria-label="schemas.imageAction"
+          >
+            <img
+              src="assets/screenshots/schema-designer.png"
+              width="1280"
+              height="820"
+              alt="Schematica's visual JSON Schema designer showing schema coverage, field keys, types, titles, and required-field controls."
+              data-i18n-alt="schemas.imageAlt"
+              loading="lazy"
+            />
+          </a>
+        </figure>
+      </section>
+
+      <section class="section cli-section">
+        <div class="shell cli-layout">
+          <div class="feature-copy">
+            <p class="eyebrow eyebrow-dark">
+              <span></span><span data-i18n="cli.eyebrow">The same model in your terminal</span>
+            </p>
+            <h2 data-i18n="cli.title">Move from inspection to automation.</h2>
+            <p data-i18n="cli.body">
+              The desktop app and CLI share the same parser, validator, path model, and semantic
+              diff. What a person reviews can also become a repeatable check in CI.
+            </p>
+            <a class="text-link" href="https://github.com/nkiyohara/schematica#cli">
+              <span data-i18n="cli.action">Explore the CLI</span><span aria-hidden="true">→</span>
+            </a>
+          </div>
+          <div
+            class="terminal"
+            aria-label="Schematica CLI examples"
+            data-i18n-aria-label="a11y.cliExamples"
+          >
+            <div class="terminal-bar">
+              <span></span><span></span><span></span>
+              <small>experiment-workspace</small>
+            </div>
+            <pre><code><span class="prompt">$</span> schematica validate slurm.yaml \
+    --schema schema.json
+<span class="success" data-i18n="cli.valid">✓ Configuration is valid</span>
+
+<span class="prompt">$</span> schematica diff baseline.yaml slurm.yaml
+<span class="muted" data-i18n="cli.summary">2 changed · 1 missing · 0 same</span>
+<span class="changed">~ backend          local → slurm</span>
+<span class="changed">~ training.batch  32 → 128</span>
+<span class="missing">+ partition        gpu</span></code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="section shell capabilities" aria-labelledby="capabilities-title">
+        <div class="section-heading compact">
+          <p class="eyebrow">
+            <span></span><span data-i18n="capabilities.eyebrow">Small details, connected</span>
+          </p>
+          <h2 id="capabilities-title" data-i18n="capabilities.title">
+            A focused workbench, not another platform.
+          </h2>
+        </div>
+        <div class="capability-grid">
+          <article>
+            <h3 data-i18n="capabilities.sourceTitle">Source stays visible</h3>
+            <p data-i18n="capabilities.sourceBody">
+              Use the form and syntax-highlighted source side by side, with a split you can resize.
+            </p>
+          </article>
+          <article>
+            <h3 data-i18n="capabilities.remoteTitle">Remote files feel local</h3>
+            <p data-i18n="capabilities.remoteBody">
+              Discover SSH hosts, browse directories, authenticate when needed, and edit remote
+              configs.
+            </p>
+          </article>
+          <article>
+            <h3 data-i18n="capabilities.validationTitle">Validation has context</h3>
+            <p data-i18n="capabilities.validationBody">
+              Issues point back to the affected field and path instead of becoming a detached error
+              log.
+            </p>
+          </article>
+          <article>
+            <h3 data-i18n="capabilities.formatsTitle">Your formats remain yours</h3>
+            <p data-i18n="capabilities.formatsBody">
+              Work with YAML, JSON, and TOML rather than moving configuration into a hosted
+              database.
+            </p>
+          </article>
+          <article>
+            <h3 data-i18n="capabilities.keyboardTitle">Keyboard-ready</h3>
+            <p data-i18n="capabilities.keyboardBody">
+              Use a command palette, tab navigation, resizable panes, and accessible native
+              controls.
+            </p>
+          </article>
+          <article>
+            <h3 data-i18n="capabilities.platformTitle">Cross-platform</h3>
+            <p data-i18n="capabilities.platformBody">
+              A lightweight Tauri desktop app for macOS, Windows, and Linux, plus a scriptable CLI.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="cta-section">
+        <div class="shell cta-card">
+          <div>
+            <p class="eyebrow">
+              <span></span><span data-i18n="cta.eyebrow">Make configuration reviewable</span>
+            </p>
+            <h2 data-i18n="cta.title">Spend compute on the experiment, not the typo.</h2>
+            <p data-i18n="cta.body">
+              Schematica is preparing its first public beta. Follow the repository for release
+              builds and progress.
+            </p>
+          </div>
+          <div class="cta-actions">
+            <a
+              class="button button-primary"
+              href="https://github.com/nkiyohara/schematica"
+              data-i18n="cta.repository"
+              >View repository</a
+            >
+            <a
+              class="button button-secondary"
+              href="https://github.com/nkiyohara/schematica/releases"
+              data-i18n="cta.releases"
+              >Releases</a
+            >
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="shell footer-layout">
+        <a class="brand" href="#top">
+          <img src="assets/schematica-icon.svg" alt="" width="34" height="34" />
+          <span>Schematica</span>
+        </a>
+        <p data-i18n="footer.tagline">Schema-aware configuration for careful work.</p>
+        <div class="footer-links">
+          <a href="https://github.com/nkiyohara/schematica">GitHub</a>
+          <a
+            href="https://github.com/nkiyohara/schematica/blob/main/README.md"
+            data-i18n="footer.documentation"
+            >Documentation</a
+          >
+          <span>© 2026</span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

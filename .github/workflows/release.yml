@@ -1,0 +1,466 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      runner_mode:
+        description: "Runner selection policy for release jobs"
+        required: true
+        type: choice
+        default: auto
+        options:
+          - auto
+          - hosted
+          - self-hosted
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  runner-plan:
+    name: Release runner plan
+    runs-on: ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.runner_mode == 'self-hosted' && '["self-hosted","schematica-release","schematica-linux-x64"]' || '"ubuntu-latest"') }}
+    outputs:
+      runner_mode: ${{ steps.plan.outputs.runner_mode }}
+      qa_runs_on: ${{ steps.plan.outputs.qa_runs_on }}
+      qa_runner_kind: ${{ steps.plan.outputs.qa_runner_kind }}
+      macos_runs_on: ${{ steps.plan.outputs.macos_runs_on }}
+      macos_runner_kind: ${{ steps.plan.outputs.macos_runner_kind }}
+      linux_runs_on: ${{ steps.plan.outputs.linux_runs_on }}
+      linux_runner_kind: ${{ steps.plan.outputs.linux_runner_kind }}
+      windows_runs_on: ${{ steps.plan.outputs.windows_runs_on }}
+      windows_runner_kind: ${{ steps.plan.outputs.windows_runner_kind }}
+      cli_runs_on: ${{ steps.plan.outputs.cli_runs_on }}
+      cli_runner_kind: ${{ steps.plan.outputs.cli_runner_kind }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+      - id: plan
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_RUNNER_ADMIN_TOKEN || github.token }}
+          RELEASE_RUNNER_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.runner_mode || 'auto' }}
+        run: node scripts/select-release-runners.mjs
+
+  qa:
+    name: Release quality gate
+    needs: runner-plan
+    runs-on: ${{ fromJSON(needs.runner-plan.outputs.qa_runs_on) }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+      - uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # stable
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
+        with:
+          workspaces: . -> target
+      - name: Install Linux Tauri dependencies
+        if: needs.runner-plan.outputs.qa_runner_kind == 'hosted'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libssl-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            pkg-config
+      - run: corepack enable
+      - id: pnpm-store
+        shell: bash
+        run: echo "STORE_PATH=$(corepack pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-store-
+      - run: corepack pnpm install --frozen-lockfile
+      - run: node scripts/check-release-version.mjs "${{ github.ref_name }}"
+      - run: corepack pnpm format:check
+      - run: corepack pnpm lint
+      - run: corepack pnpm check
+      - run: cargo check --workspace --locked
+
+  desktop-macos:
+    name: Tauri macOS signed bundle
+    needs:
+      - runner-plan
+      - qa
+    environment: macos-signing
+    permissions:
+      contents: write
+    runs-on: ${{ fromJSON(needs.runner-plan.outputs.macos_runs_on) }}
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # stable
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
+        with:
+          workspaces: . -> target
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+      - run: corepack enable
+      - id: pnpm-store
+        shell: bash
+        run: echo "STORE_PATH=$(corepack pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-store-
+      - run: corepack pnpm install --frozen-lockfile
+      - name: Import Apple Developer ID certificate
+        if: needs.runner-plan.outputs.macos_runner_kind == 'hosted'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        shell: bash
+        run: |
+          certificate_path="$RUNNER_TEMP/developer-id-application.p12"
+          developer_id_g2_path="$RUNNER_TEMP/developer-id-g2.der"
+          keychain_path="$RUNNER_TEMP/schematica-signing.keychain-db"
+
+          printf '%s' "$APPLE_CERTIFICATE" | base64 --decode > "$certificate_path"
+
+          curl --fail --location --silent --show-error \
+            https://www.apple.com/certificateauthority/DeveloperIDG2CA.cer \
+            --output "$developer_id_g2_path"
+          echo "f16cd3c54c7f83cea4bf1a3e6a0819c8aaa8e4a1528fd144715f350643d2df3a  $developer_id_g2_path" \
+            | shasum -a 256 -c -
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$keychain_path"
+          security set-keychain-settings -lut 21600 "$keychain_path"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$keychain_path"
+          security import "$certificate_path" \
+            -k "$keychain_path" \
+            -P "$APPLE_CERTIFICATE_PASSWORD" \
+            -T /usr/bin/codesign
+          security find-certificate \
+            -c "Developer ID Certification Authority" \
+            "$keychain_path" >/dev/null 2>&1 \
+            || security add-certificates -k "$keychain_path" "$developer_id_g2_path"
+          security list-keychains -d user -s "$keychain_path"
+          security default-keychain -d user -s "$keychain_path"
+          security set-key-partition-list \
+            -S apple-tool:,apple:,codesign: \
+            -s \
+            -k "$KEYCHAIN_PASSWORD" \
+            "$keychain_path"
+          security find-identity -v -p codesigning "$keychain_path"
+      - uses: tauri-apps/tauri-action@fce9c6108b31ea247710505d3aaaa893ee6768d4 # v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_SIGNING_IDENTITY: ${{ vars.APPLE_SIGNING_IDENTITY }}
+        with:
+          projectPath: apps/desktop
+          tagName: ${{ github.ref_name }}
+          releaseName: "Schematica ${{ github.ref_name }}"
+          releaseBody: |
+            Schematica beta desktop binaries and CLI tarball.
+
+            Downloads:
+            - macOS Apple Silicon: the `aarch64.dmg` asset
+            - Linux: AppImage, deb, or rpm
+            - CLI: `schematica-cli-${{ github.ref_name }}.tar.gz`
+
+            Windows note:
+            Official Windows binaries are not published while code signing is pending. Windows builds are still smoke-tested in CI.
+
+            Quality checks for this release:
+            - Format, lint, JS/package checks, and `cargo check --workspace --locked`
+            - Signed macOS and Linux Tauri release builds
+            - Unsigned Windows smoke build, without publishing Windows release assets
+            - Linux desktop binary smoke test under Xvfb to catch startup crashes and blank-launch failures
+
+            macOS note:
+            The macOS build is signed with a Developer ID Application certificate and submitted for Apple notarization during the release workflow.
+
+            Linux note:
+            Linux artifacts include GPG detached signatures and signed SHA256 checksums. The public key is available in `docs/release-signing/schematica-linux-gpg-public.asc`.
+          releaseDraft: true
+          prerelease: true
+          args: "--ci"
+
+  desktop-linux:
+    name: Tauri Linux signed bundles
+    needs:
+      - runner-plan
+      - qa
+    environment: linux-signing
+    permissions:
+      contents: write
+    runs-on: ${{ fromJSON(needs.runner-plan.outputs.linux_runs_on) }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # stable
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
+        with:
+          workspaces: . -> target
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+      - name: Install Linux Tauri dependencies
+        if: needs.runner-plan.outputs.linux_runner_kind == 'hosted'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libssl-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            pkg-config \
+            xvfb
+      - run: corepack enable
+      - id: pnpm-store
+        shell: bash
+        run: echo "STORE_PATH=$(corepack pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-store-
+      - run: corepack pnpm install --frozen-lockfile
+      - name: Import GPG release signing key
+        if: needs.runner-plan.outputs.linux_runner_kind == 'hosted'
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+        shell: bash
+        run: |
+          mkdir -p ~/.gnupg
+          chmod 700 ~/.gnupg
+          printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import
+          gpg --batch --list-secret-keys --keyid-format LONG "${{ vars.GPG_FINGERPRINT }}"
+      - uses: tauri-apps/tauri-action@fce9c6108b31ea247710505d3aaaa893ee6768d4 # v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SIGN: "1"
+          SIGN_KEY: ${{ vars.GPG_FINGERPRINT }}
+          APPIMAGETOOL_SIGN_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          APPIMAGETOOL_FORCE_SIGN: "1"
+        with:
+          projectPath: apps/desktop
+          tagName: ${{ github.ref_name }}
+          releaseName: "Schematica ${{ github.ref_name }}"
+          releaseBody: |
+            Schematica beta desktop binaries and CLI tarball.
+
+            Downloads:
+            - macOS Apple Silicon: the `aarch64.dmg` asset
+            - Linux: AppImage, deb, or rpm
+            - CLI: `schematica-cli-${{ github.ref_name }}.tar.gz`
+
+            Windows note:
+            Official Windows binaries are not published while code signing is pending. Windows builds are still smoke-tested in CI.
+
+            Quality checks for this release:
+            - Format, lint, JS/package checks, and `cargo check --workspace --locked`
+            - Signed macOS and Linux Tauri release builds
+            - Unsigned Windows smoke build, without publishing Windows release assets
+            - Linux desktop binary smoke test under Xvfb to catch startup crashes and blank-launch failures
+
+            macOS note:
+            The macOS build is signed with a Developer ID Application certificate and submitted for Apple notarization during the release workflow.
+
+            Linux note:
+            Linux artifacts include GPG detached signatures and signed SHA256 checksums. The public key is available in `docs/release-signing/schematica-linux-gpg-public.asc`.
+          releaseDraft: true
+          prerelease: true
+          args: "--ci"
+      - name: Smoke Linux desktop binary
+        run: bash apps/desktop/scripts/smoke-linux-binary.sh
+      - name: Sign Linux release artifacts
+        env:
+          GPG_FINGERPRINT: ${{ vars.GPG_FINGERPRINT }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        shell: bash
+        run: |
+          cd target/release/bundle
+
+          mapfile -d '' release_artifacts < <(
+            find appimage deb rpm \
+              -maxdepth 2 \
+              -type f \
+              \( -name '*.AppImage' -o -name '*.deb' -o -name '*.rpm' \) \
+              -print0 \
+              | sort -z
+          )
+
+          if [[ "${#release_artifacts[@]}" -eq 0 ]]; then
+            echo "No Linux release artifacts found under target/release/bundle." >&2
+            exit 1
+          fi
+
+          printf '%s\0' "${release_artifacts[@]}" \
+            | xargs -0 sha256sum > SHA256SUMS
+
+          for artifact in "${release_artifacts[@]}"; do
+            gpg \
+              --batch \
+              --yes \
+              --pinentry-mode loopback \
+              --passphrase "$GPG_PASSPHRASE" \
+              --local-user "$GPG_FINGERPRINT" \
+              --armor \
+              --detach-sign \
+              --output "$artifact.asc" \
+              "$artifact"
+          done
+
+          gpg \
+            --batch \
+            --yes \
+            --pinentry-mode loopback \
+            --passphrase "$GPG_PASSPHRASE" \
+            --local-user "$GPG_FINGERPRINT" \
+            --armor \
+            --detach-sign \
+            --output SHA256SUMS.asc \
+            SHA256SUMS
+      - uses: softprops/action-gh-release@c12583777ecdfd3be55c69cf75464299dc01057e # v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Schematica ${{ github.ref_name }}"
+          draft: true
+          prerelease: true
+          files: |
+            target/release/bundle/SHA256SUMS
+            target/release/bundle/SHA256SUMS.asc
+            target/release/bundle/appimage/*.AppImage.asc
+            target/release/bundle/deb/*.deb.asc
+            target/release/bundle/rpm/*.rpm.asc
+            docs/release-signing/schematica-linux-gpg-public.asc
+
+  desktop-windows-smoke:
+    name: Tauri Windows smoke build
+    needs:
+      - runner-plan
+      - qa
+    permissions:
+      contents: read
+    runs-on: ${{ fromJSON(needs.runner-plan.outputs.windows_runs_on) }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # stable
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
+        with:
+          workspaces: . -> target
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+      - run: corepack enable
+      - id: pnpm-store
+        shell: bash
+        run: echo "STORE_PATH=$(corepack pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-store-
+      - run: corepack pnpm install --frozen-lockfile
+      - name: Build unsigned Windows bundle without publishing
+        working-directory: apps/desktop
+        shell: bash
+        run: corepack pnpm tauri build --ci --no-sign --bundles nsis
+
+  cli:
+    name: CLI release tarball
+    needs:
+      - runner-plan
+      - desktop-macos
+      - desktop-linux
+      - desktop-windows-smoke
+    runs-on: ${{ fromJSON(needs.runner-plan.outputs.cli_runs_on) }}
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+      - run: corepack enable
+      - id: pnpm-store
+        shell: bash
+        run: echo "STORE_PATH=$(corepack pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-store-
+      - run: corepack pnpm install --frozen-lockfile
+      - run: corepack pnpm --filter @schematica/cli build
+      - name: Smoke-test standalone CLI artifact
+        shell: bash
+        run: |
+          artifact_dir="$(mktemp -d)"
+          cp packages/cli/dist/index.cjs "$artifact_dir/schematica.cjs"
+          (cd "$artifact_dir" && node schematica.cjs --help)
+      - run: tar -czf schematica-cli-${{ github.ref_name }}.tar.gz -C packages/cli dist package.json
+      - uses: softprops/action-gh-release@c12583777ecdfd3be55c69cf75464299dc01057e # v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Schematica ${{ github.ref_name }}"
+          body: |
+            Schematica beta desktop binaries and CLI tarball.
+
+            Downloads:
+            - macOS Apple Silicon: the `aarch64.dmg` asset
+            - Linux: AppImage, deb, or rpm
+            - CLI: `schematica-cli-${{ github.ref_name }}.tar.gz`
+
+            Windows note:
+            Official Windows binaries are not published while code signing is pending. Windows builds are still smoke-tested in CI.
+
+            Quality checks for this release:
+            - Format, lint, JS/package checks, and `cargo check --workspace --locked`
+            - Signed macOS and Linux Tauri release builds
+            - Unsigned Windows smoke build, without publishing Windows release assets
+            - Linux desktop binary smoke test under Xvfb to catch startup crashes and blank-launch failures
+
+            macOS note:
+            The macOS build is signed with a Developer ID Application certificate and submitted for Apple notarization during the release workflow.
+
+            Linux note:
+            Linux artifacts include GPG detached signatures and signed SHA256 checksums. The public key is available in `docs/release-signing/schematica-linux-gpg-public.asc`.
+          draft: true
+          prerelease: true
+          files: schematica-cli-${{ github.ref_name }}.tar.gz
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          release_id="$(
+            gh api "repos/$GH_REPO/releases" \
+              --jq ".[] | select(.tag_name == \"$RELEASE_TAG\" and .draft == true) | .id" \
+              | head -n 1
+          )"
+          if [[ -z "$release_id" ]]; then
+            echo "Could not find a draft release for $RELEASE_TAG." >&2
+            exit 1
+          fi
+          gh api -X PATCH "repos/$GH_REPO/releases/$release_id" \
+            -f draft=false \
+            -f prerelease=true \
+            -f name="Schematica $RELEASE_TAG"

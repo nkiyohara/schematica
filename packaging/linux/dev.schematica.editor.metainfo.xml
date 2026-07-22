@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>dev.schematica.editor</id>
+  <name>Schematica</name>
+  <summary>Schema-driven YAML, JSON, and TOML config editor</summary>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <url type="homepage">https://github.com/nkiyohara/schematica</url>
+  <categories>
+    <category>Development</category>
+  </categories>
+  <releases>
+    <release version="0.1.0" date="2026-06-11" />
+  </releases>
+</component>

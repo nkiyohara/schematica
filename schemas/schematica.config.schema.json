@@ -1,0 +1,241 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schematica.dev/schemas/schematica.config.schema.json",
+  "title": "Schematica Project Configuration",
+  "description": "Configures Schematica's editor behavior, visual theme, file handling, and dynamic providers.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "x-ui": {
+        "hidden": true
+      }
+    },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "default": "schematica-project",
+          "x-ui": {
+            "placeholder": "my-experiment-configs"
+          }
+        },
+        "schema": {
+          "type": "string",
+          "description": "Path to the primary JSON Schema for the edited config.",
+          "x-ui": {
+            "placeholder": "configs/schema.json"
+          }
+        },
+        "config": {
+          "type": "string",
+          "description": "Path to the primary YAML, JSON, or TOML config file.",
+          "x-ui": {
+            "placeholder": "configs/experiment.yaml"
+          }
+        }
+      }
+    },
+    "interface": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "locale": {
+          "type": "string",
+          "enum": ["system", "en", "ja", "es", "zh-CN", "ko", "fr", "de"],
+          "default": "system",
+          "description": "UI language preference. Use system to follow the desktop locale."
+        }
+      }
+    },
+    "features": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "git": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable read-only Git context and dirty working tree indicators."
+        },
+        "feedback": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show GitHub issue feedback entry points."
+        }
+      }
+    },
+    "updates": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "policy": {
+          "type": "string",
+          "enum": ["auto", "package-manager", "signed-updater", "manual"],
+          "default": "auto",
+          "description": "Controls how Schematica checks for desktop app updates."
+        },
+        "checkOnStartup": {
+          "type": "boolean",
+          "default": true,
+          "description": "Check for updates on startup when the install channel supports the signed updater."
+        }
+      }
+    },
+    "editor": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "defaultFormat": {
+          "type": "string",
+          "enum": ["yaml", "json", "toml"],
+          "default": "yaml"
+        },
+        "autosave": {
+          "type": "boolean",
+          "default": false
+        },
+        "showRawPreview": {
+          "type": "boolean",
+          "default": true
+        },
+        "preserveComments": {
+          "type": "string",
+          "enum": ["off", "best-effort"],
+          "default": "best-effort",
+          "description": "Preserve YAML comments when editing through GUI or CLI where possible."
+        }
+      }
+    },
+    "appearance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "theme": {
+          "type": "string",
+          "enum": ["system", "light", "dark"],
+          "default": "system"
+        },
+        "palette": {
+          "type": "string",
+          "enum": ["slate", "graphite", "cobalt", "emerald", "rose"],
+          "default": "slate",
+          "description": "Base color palette used by the workbench chrome and panels."
+        },
+        "accent": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "default": "#2563eb",
+          "x-ui": {
+            "widget": "color"
+          }
+        },
+        "density": {
+          "type": "string",
+          "enum": ["compact", "comfortable", "spacious"],
+          "default": "comfortable"
+        },
+        "contrast": {
+          "type": "string",
+          "enum": ["standard", "high"],
+          "default": "standard",
+          "description": "Contrast treatment for borders, muted text, and critical workspace chrome."
+        },
+        "motion": {
+          "type": "string",
+          "enum": ["system", "reduced", "full"],
+          "default": "system",
+          "description": "Motion preference. System follows the OS reduced-motion setting."
+        },
+        "fontFamily": {
+          "type": "string",
+          "default": "Inter, ui-sans-serif, system-ui, sans-serif"
+        },
+        "monoFontFamily": {
+          "type": "string",
+          "default": "JetBrains Mono, ui-monospace, SFMono-Regular, Menlo, monospace"
+        },
+        "fontSize": {
+          "type": "integer",
+          "minimum": 12,
+          "maximum": 20,
+          "default": 14,
+          "x-ui": {
+            "unit": "px"
+          }
+        },
+        "cornerRadius": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 12,
+          "default": 8,
+          "x-ui": {
+            "unit": "px"
+          }
+        }
+      }
+    },
+    "providers": {
+      "type": "object",
+      "description": "Reserved for future dynamic option providers. This section is preserved but not executed by the current release.",
+      "x-ui": {
+        "readOnly": true,
+        "note": "Provider execution is not enabled in this release."
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind"],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": ["command", "url"]
+          },
+          "command": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "cacheSeconds": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 30
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "command"
+                }
+              }
+            },
+            "then": {
+              "required": ["command"]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "url"
+                }
+              }
+            },
+            "then": {
+              "required": ["url"]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "required": ["project"]
+}

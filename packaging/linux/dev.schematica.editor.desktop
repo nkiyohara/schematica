@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Schematica
+Comment=Schema-driven YAML, JSON, and TOML config editor
+Exec="@APPIMAGE@" %F
+TryExec=@APPIMAGE@
+Icon=dev.schematica.editor
+Terminal=false
+Categories=Development;
+MimeType=application/yaml;application/json;application/toml;
+StartupWMClass=schematica
+Keywords=config;schema;yaml;json;toml;

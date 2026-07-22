@@ -1,0 +1,11 @@
+[workspace]
+members = ["apps/desktop/src-tauri"]
+resolver = "2"
+
+[workspace.package]
+# User-visible release versions are sourced from the root package.json.
+version = "0.0.0"
+description = "Fast schema-driven config editor for YAML, JSON, and TOML"
+authors = ["Naoki Kiyohara"]
+edition = "2021"
+license = "MIT"

@@ -1,0 +1,8 @@
+"$schema" = "./schema.json"
+project = "demo"
+backend = "local"
+
+[training]
+batch_size = 32
+learning_rate = 0.0001
+mixed_precision = true

@@ -1,0 +1,74 @@
+channels:
+  cli:
+    homebrew_formula:
+      status: template_not_published
+      publish: false
+      install: brew install schematica
+      update: brew upgrade schematica
+      artifact: schematica-cli-{version}.tar.gz
+    npm:
+      status: template_not_published
+      publish: false
+      install: npm install -g schematica
+      update: npm update -g schematica
+      artifact: packages/cli/dist
+  desktop:
+    homebrew_cask:
+      status: template_not_published
+      publish: false
+      install: brew install --cask schematica
+      update: brew upgrade --cask schematica
+      artifact: macOS dmg
+      updater: homebrew
+      install_channel: homebrew
+    winget:
+      status: deferred_until_windows_code_signing
+      publish: false
+      install: winget install Schematica.Schematica
+      update: winget upgrade Schematica.Schematica
+      artifact: signed Windows nsis or msi
+      updater: winget
+      install_channel: winget
+    apt:
+      status: template_not_published
+      publish: false
+      install: sudo apt install schematica
+      update: sudo apt update && sudo apt upgrade schematica
+      artifact: Linux deb
+      updater: apt
+      install_channel: apt
+    rpm:
+      status: template_not_published
+      publish: false
+      install: sudo dnf install schematica
+      update: sudo dnf upgrade schematica
+      artifact: Linux rpm
+      updater: dnf_or_zypper
+      install_channel: rpm
+    appimage:
+      status: planned_first_beta
+      publish: false
+      install: download Schematica.AppImage
+      update: manual_github_release_download
+      artifact: Linux AppImage plus updater signature
+      updater: tauri_updater
+      install_channel: appimage
+    direct_download:
+      status: planned_first_beta
+      publish: false
+      install: download dmg, deb, rpm, or AppImage from GitHub Releases
+      update: manual_github_release_download
+      artifact: signed Tauri bundles
+      updater: manual
+      install_channel: direct
+
+file_associations:
+  yaml:
+    extensions: [yaml, yml]
+    mime: application/yaml
+  json:
+    extensions: [json]
+    mime: application/json
+  toml:
+    extensions: [toml]
+    mime: application/toml

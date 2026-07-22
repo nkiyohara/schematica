@@ -1,0 +1,9 @@
+"$schema" = "./schema.json"
+project = "demo"
+backend = "slurm"
+partition = "gpu"
+
+[training]
+batch_size = 128
+learning_rate = 0.0001
+mixed_precision = true

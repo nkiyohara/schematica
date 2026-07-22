@@ -1,0 +1,30 @@
+$schema: ./schemas/schematica.config.schema.json
+project:
+  name: schematica
+  schema: examples/schema.json
+  config: examples/config.yaml
+interface:
+  locale: system
+features:
+  git: true
+  feedback: true
+updates:
+  policy: auto
+  checkOnStartup: true
+editor:
+  defaultFormat: yaml
+  autosave: false
+  showRawPreview: true
+  preserveComments: best-effort
+appearance:
+  theme: system
+  palette: slate
+  accent: "#2563eb"
+  density: comfortable
+  contrast: standard
+  motion: system
+  fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif"
+  monoFontFamily: "JetBrains Mono, ui-monospace, SFMono-Regular, Menlo, monospace"
+  fontSize: 14
+  cornerRadius: 8
+providers: {}
