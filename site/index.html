@@ -73,6 +73,7 @@
         </a>
         <div class="nav-links">
           <a href="#workflow" data-i18n="nav.workflow">Workflow</a>
+          <a href="#install" data-i18n="nav.install">Install</a>
           <a href="#compare" data-i18n="nav.compare">Compare</a>
           <a href="#schemas" data-i18n="nav.schemas">Schemas</a>
           <label class="language-picker">
@@ -184,6 +185,150 @@
           <div>
             <strong data-i18n="trust.inspect">Inspect</strong
             ><span data-i18n="trust.inspectDetail">every source change</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section install-section" id="install" aria-labelledby="install-title">
+        <div class="shell">
+          <div class="section-heading install-heading">
+            <p class="eyebrow">
+              <span></span><span data-i18n="install.eyebrow">Install with confidence</span>
+            </p>
+            <h2 id="install-title" data-i18n="install.title">
+              The right download, with its trust status explained.
+            </h2>
+            <p data-i18n="install.intro">
+              Schematica detects this device and highlights the relevant path. You can always choose
+              another platform.
+            </p>
+          </div>
+
+          <div class="install-card">
+            <div class="platform-column">
+              <p class="detected-platform" id="detected-platform" hidden>
+                <span data-i18n="install.detected">Detected for this device</span>
+                <strong id="detected-platform-name"></strong>
+              </p>
+              <p class="picker-label" data-i18n="install.choose">Choose a platform</p>
+              <div
+                class="platform-picker"
+                role="tablist"
+                aria-label="Installation platform"
+                data-i18n-aria-label="a11y.platformPicker"
+              >
+                <button
+                  id="install-tab-mac"
+                  type="button"
+                  role="tab"
+                  data-platform="mac"
+                  aria-controls="platform-details"
+                  aria-selected="false"
+                >
+                  <span aria-hidden="true">●</span><span data-i18n="install.mac">macOS</span>
+                </button>
+                <button
+                  id="install-tab-linux"
+                  type="button"
+                  role="tab"
+                  data-platform="linux"
+                  aria-controls="platform-details"
+                  aria-selected="false"
+                >
+                  <span aria-hidden="true">◆</span><span data-i18n="install.linux">Linux</span>
+                </button>
+                <button
+                  id="install-tab-windows"
+                  type="button"
+                  role="tab"
+                  data-platform="windows"
+                  aria-controls="platform-details"
+                  aria-selected="false"
+                >
+                  <span aria-hidden="true">■</span><span data-i18n="install.windows">Windows</span>
+                </button>
+              </div>
+
+              <div class="release-panel" aria-live="polite" aria-atomic="true">
+                <div class="release-kicker">
+                  <span class="release-pulse" aria-hidden="true"></span>
+                  <span data-i18n="install.beta">Public beta</span>
+                </div>
+                <h3 id="install-release-title" data-i18n="install.loading">
+                  Checking signed release availability…
+                </h3>
+                <p id="install-release-body" data-i18n="install.loading">
+                  Checking signed release availability…
+                </p>
+                <div class="install-actions">
+                  <a
+                    class="button button-primary"
+                    id="install-primary-action"
+                    href="https://github.com/nkiyohara/schematica/releases"
+                    data-i18n="install.openReleases"
+                    >Open GitHub Releases</a
+                  >
+                  <a
+                    class="button button-secondary"
+                    href="https://github.com/nkiyohara/schematica#quick-start"
+                    data-i18n="install.buildSource"
+                    >Build from source</a
+                  >
+                </div>
+                <p class="beta-note" data-i18n="install.betaCaution">
+                  Beta updates are manual. Back up or version-control important configs before
+                  editing them.
+                </p>
+                <div class="asset-links" id="install-asset-links" hidden></div>
+              </div>
+            </div>
+
+            <aside
+              class="trust-column"
+              id="platform-details"
+              role="tabpanel"
+              aria-labelledby="install-tab-mac platform-title"
+              tabindex="0"
+            >
+              <div class="trust-header">
+                <span class="signature-badge" id="signature-badge"></span>
+                <span class="platform-name" id="platform-title"></span>
+              </div>
+              <p class="platform-architecture" id="platform-architecture"></p>
+              <p class="trust-explanation" id="platform-trust"></p>
+
+              <div class="install-step">
+                <span aria-hidden="true">01</span>
+                <p id="platform-steps"></p>
+              </div>
+
+              <div class="package-commands" id="linux-package-commands" hidden>
+                <strong data-i18n="install.linuxCommands">Install a downloaded package</strong>
+                <pre><code>chmod +x Schematica_*.AppImage
+./Schematica_*.AppImage
+
+# Debian / Ubuntu
+sudo apt install ./Schematica_*.deb
+
+# Fedora / RHEL
+sudo dnf install ./Schematica-*.rpm</code></pre>
+              </div>
+
+              <div class="install-caution">
+                <strong data-i18n="install.caution">Before you install</strong>
+                <p id="platform-caution"></p>
+              </div>
+
+              <a
+                class="verification-link"
+                id="linux-verification-link"
+                href="https://github.com/nkiyohara/schematica/blob/main/docs/release-signing/README.md"
+                hidden
+              >
+                <span data-i18n="install.verifyLinux">How to verify Linux files</span>
+                <span aria-hidden="true">→</span>
+              </a>
+            </aside>
           </div>
         </div>
       </section>

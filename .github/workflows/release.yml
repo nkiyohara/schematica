@@ -306,8 +306,11 @@ jobs:
             exit 1
           fi
 
-          printf '%s\0' "${release_artifacts[@]}" \
-            | xargs -0 sha256sum > SHA256SUMS
+          : > SHA256SUMS
+          for artifact in "${release_artifacts[@]}"; do
+            artifact_hash="$(sha256sum "$artifact" | cut -d ' ' -f 1)"
+            printf '%s  %s\n' "$artifact_hash" "$(basename "$artifact")" >> SHA256SUMS
+          done
 
           for artifact in "${release_artifacts[@]}"; do
             gpg \
@@ -389,6 +392,7 @@ jobs:
       - desktop-windows-smoke
     runs-on: ${{ fromJSON(needs.runner-plan.outputs.cli_runs_on) }}
     permissions:
+      actions: write
       contents: write
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -464,3 +468,7 @@ jobs:
             -f draft=false \
             -f prerelease=true \
             -f name="Schematica $RELEASE_TAG"
+      - name: Refresh installation page
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run pages.yml --ref main
