@@ -6,13 +6,7 @@ const rawViewNodeThreshold = 1_000;
 const rawViewDepthThreshold = 8;
 
 export type SchemaFreeViewReason =
-  | "form"
-  | "invalid"
-  | "root"
-  | "large"
-  | "collection"
-  | "complex"
-  | "unsafeInteger";
+  "form" | "invalid" | "root" | "large" | "collection" | "complex" | "unsafeInteger";
 
 export interface SchemaFreeDocumentAnalysis {
   preferredView: "form" | "raw";
