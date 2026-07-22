@@ -54,6 +54,38 @@ describe("core", () => {
     expect(stringifyData(data, { format: "toml" })).toContain("[training]");
   });
 
+  it("rejects TOML integer literals outside JavaScript's safe range", () => {
+    for (const literal of [
+      "9007199254740992",
+      "9007199254740993",
+      "9223372036854775807",
+      "-9223372036854775808",
+    ]) {
+      expect(() => parseData(`value = ${literal}\n`, { format: "toml" })).toThrow();
+    }
+  });
+
+  it("refuses to save unsafe JavaScript integers as TOML", () => {
+    const unsafeIntegers = [
+      Number.MAX_SAFE_INTEGER + 1,
+      Number("9223372036854775807"),
+      Number("-9223372036854775808"),
+    ];
+
+    for (const value of unsafeIntegers) {
+      expect(() => stringifyData({ value }, { format: "toml" })).toThrow(
+        "cannot be saved losslessly",
+      );
+    }
+
+    expect(() =>
+      updateDataText("value = 1\n", "value", Number.MAX_SAFE_INTEGER + 1, { format: "toml" }),
+    ).toThrow("cannot be saved losslessly");
+    expect(stringifyData({ value: Number.MAX_SAFE_INTEGER }, { format: "toml" })).toContain(
+      `value = ${Number.MAX_SAFE_INTEGER}`,
+    );
+  });
+
   it("applies nested defaults", () => {
     expect(applySchemaDefaults(schema, undefined)).toEqual({
       name: "demo",

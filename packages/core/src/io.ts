@@ -52,7 +52,7 @@ export function stringifyData(data: unknown, options: FormatOptions = {}): strin
     if (!isRecord(data)) {
       throw new Error("TOML output requires an object at the document root.");
     }
-    return stringifyToml(restoreTomlTemporalValues(data));
+    return stringifyTomlSafely(restoreTomlTemporalValues(data));
   }
 
   return stringify(data, {
@@ -166,7 +166,7 @@ function updateTomlText(source: string, path: string, value: JsonValue) {
   const parts = tokens(path);
   if (parts.length === 0) {
     if (!isRecord(value)) throw new Error("TOML output requires an object at the document root.");
-    return stringifyToml(value);
+    return stringifyTomlSafely(value);
   }
 
   let cursor: unknown = data;
@@ -187,7 +187,7 @@ function updateTomlText(source: string, path: string, value: JsonValue) {
     if (isLast) cursor[part] = value;
     else cursor = cursor[part] ??= {};
   }
-  return stringifyToml(data);
+  return stringifyTomlSafely(data);
 }
 
 function updateYamlText(source: string, path: string, value: JsonValue): string {
@@ -213,6 +213,33 @@ function updateYamlText(source: string, path: string, value: JsonValue): string 
     lineWidth: 100,
     singleQuote: false,
   });
+}
+
+function stringifyTomlSafely(data: unknown): string {
+  assertSafeTomlIntegers(data);
+  return stringifyToml(data);
+}
+
+function assertSafeTomlIntegers(value: unknown, path = "$"): void {
+  if (typeof value === "number") {
+    if (Number.isInteger(value) && !Number.isSafeInteger(value)) {
+      throw new Error(
+        `TOML integer at ${path} exceeds JavaScript's safe integer range and cannot be saved losslessly.`,
+      );
+    }
+    return;
+  }
+
+  if (Array.isArray(value)) {
+    value.forEach((child, index) => assertSafeTomlIntegers(child, `${path}[${index}]`));
+    return;
+  }
+
+  if (isRecord(value)) {
+    for (const [key, child] of Object.entries(value)) {
+      assertSafeTomlIntegers(child, `${path}[${JSON.stringify(key)}]`);
+    }
+  }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
