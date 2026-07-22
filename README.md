@@ -57,13 +57,13 @@ license.
 
 ## Release Policy
 
-| Target           | First-beta policy               | Notes                                                                             |
-| ---------------- | ------------------------------- | --------------------------------------------------------------------------------- |
-| macOS            | Signed beta artifacts           | Apple silicon DMG, Developer ID signed and Apple-notarized, from GitHub Releases. |
-| Linux            | Signed beta artifacts           | x86-64 AppImage/deb/rpm artifacts with GPG signatures and signed checksums.       |
-| Windows          | Source build only               | Official Windows binaries are deferred until code signing is ready.               |
-| CLI              | GitHub Release tarball for beta | npm/Homebrew publication can wait until the release cadence is stable.            |
-| Package managers | Templates prepared              | Homebrew, APT/RPM, WinGet, AppStream, and updater templates live in `packaging/`. |
+| Target           | First-beta policy       | Notes                                                                             |
+| ---------------- | ----------------------- | --------------------------------------------------------------------------------- |
+| macOS            | Signed beta artifacts   | Apple silicon DMG, Developer ID signed and Apple-notarized, from GitHub Releases. |
+| Linux            | Signed beta artifacts   | x86-64 AppImage/deb/rpm artifacts with GPG signatures and signed checksums.       |
+| Windows          | Source build only       | Official Windows binaries are deferred until code signing is ready.               |
+| CLI              | GPG-signed beta tarball | GitHub Release tarball with a detached `.asc` signature.                          |
+| Package managers | Templates prepared      | Homebrew, APT/RPM, WinGet, AppStream, and updater templates live in `packaging/`. |
 
 Windows is still smoke-built in CI so regressions are visible, but unsigned
 installers are not uploaded to GitHub Releases and should not be submitted to

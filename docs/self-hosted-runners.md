@@ -95,9 +95,10 @@ sudo ./svc.sh install "$USER"
 sudo ./svc.sh start
 ```
 
-For self-hosted Linux release signing, import the private Linux release signing
-key into the runner user's GPG keyring. GitHub-hosted Linux builds still import
-`GPG_PRIVATE_KEY` from repository secrets.
+Linux release jobs import `GPG_PRIVATE_KEY` from the protected `linux-signing`
+environment into a temporary keyring on both hosted and self-hosted runners.
+The workflow removes that keyring after signing, so do not install the release
+key permanently on a runner.
 
 ## macOS runner setup
 
@@ -112,7 +113,7 @@ still import `APPLE_CERTIFICATE` from repository secrets.
 Manual releases can be started with:
 
 ```sh
-gh workflow run release.yml --ref v0.1.0-beta.10 -f runner_mode=auto
+gh workflow run release.yml --ref v0.1.0-beta.11 -f runner_mode=auto
 ```
 
 Use `runner_mode=self-hosted` only when every required platform runner is online.

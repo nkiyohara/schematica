@@ -12,11 +12,18 @@ published until code signing is ready.
 | -------- | --------------------------------- | ------------------------------------------------------------------------------------------ |
 | macOS    | Developer ID signed and notarized | Apple silicon (`arm64`) DMG; uses the `macos-signing` GitHub environment.                  |
 | Linux    | GPG signed                        | x86-64 artifacts; AppImage, deb, rpm, and `SHA256SUMS` receive detached `.asc` signatures. |
+| CLI      | GPG signed                        | The release tarball receives a detached `.asc` signature from the Linux release key.       |
 | Windows  | Not published                     | Unsigned Windows builds are smoke-tested only; official binaries wait for code signing.    |
 
 Signing secrets are not stored in the repository. The repository only contains
 public workflow wiring, public key material, and user-facing verification
 instructions.
+
+Before changing the draft to a public prerelease, the workflow verifies the
+macOS code signature and stapled notarization ticket, verifies every generated
+GPG signature, checks that each expected artifact and signature pair is
+present, and rejects accidental Windows installer assets. A rerun reuses the
+same release record instead of creating a second draft.
 
 ## Linux Verification
 
