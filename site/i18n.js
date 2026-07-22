@@ -199,6 +199,8 @@ function renderInstaller() {
   const platformDetails = document.querySelector("#platform-details");
   const platformArchitecture = document.querySelector("#platform-architecture");
   const platformTrust = document.querySelector("#platform-trust");
+  const platformVerifyTitle = document.querySelector("#platform-verify-title");
+  const platformVerifyBody = document.querySelector("#platform-verify-body");
   const platformSteps = document.querySelector("#platform-steps");
   const platformCaution = document.querySelector("#platform-caution");
   const verificationLink = document.querySelector("#linux-verification-link");
@@ -220,6 +222,12 @@ function renderInstaller() {
     platformArchitecture.textContent = message(`install.${platformKey}Architecture`);
   }
   if (platformTrust) platformTrust.textContent = message(`install.${platformKey}Trust`);
+  if (platformVerifyTitle) {
+    platformVerifyTitle.textContent = message(`install.${platformKey}VerifyTitle`);
+  }
+  if (platformVerifyBody) {
+    platformVerifyBody.textContent = message(`install.${platformKey}VerifyBody`);
+  }
   if (platformSteps) platformSteps.textContent = message(`install.${platformKey}Steps`);
   if (platformCaution) platformCaution.textContent = message(`install.${platformKey}Caution`);
   if (verificationLink instanceof HTMLElement) {

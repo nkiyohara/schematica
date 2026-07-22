@@ -13,7 +13,7 @@ const dynamicKeys = [
   "install.download",
   "install.assetMissing",
   ...["mac", "linux", "windows"].flatMap((platform) =>
-    ["Status", "Architecture", "Trust", "Steps", "Caution"].map(
+    ["Status", "Architecture", "Trust", "VerifyTitle", "VerifyBody", "Steps", "Caution"].map(
       (suffix) => `install.${platform}${suffix}`,
     ),
   ),

@@ -747,6 +747,27 @@ select:focus-visible {
   line-height: 1.65;
 }
 
+.trust-signal {
+  margin-top: 20px;
+  border: 1px solid #cbd9ef;
+  border-radius: 12px;
+  background: #f4f8ff;
+  padding: 15px 16px;
+}
+
+.trust-signal strong {
+  display: block;
+  color: var(--blue-dark);
+  font-size: 0.78rem;
+}
+
+.trust-signal p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
 .install-step {
   display: grid;
   grid-template-columns: auto 1fr;
