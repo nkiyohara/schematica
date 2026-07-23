@@ -20,10 +20,11 @@ public workflow wiring, public key material, and user-facing verification
 instructions.
 
 Before changing the draft to a public prerelease, the workflow verifies the
-macOS code signature and stapled notarization ticket, verifies every generated
-GPG signature, checks that each expected artifact and signature pair is
-present, and rejects accidental Windows installer assets. A rerun reuses the
-same release record instead of creating a second draft.
+macOS code signature, submits the distribution DMG for notarization, and
+validates its stapled ticket. It also verifies every generated GPG signature,
+checks that each expected artifact and signature pair is present, and rejects
+accidental Windows installer assets. A rerun reuses the same release record
+instead of creating a second draft.
 
 ## Linux Verification
 

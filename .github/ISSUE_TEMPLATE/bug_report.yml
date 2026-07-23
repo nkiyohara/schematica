@@ -12,7 +12,7 @@ body:
     attributes:
       label: Schematica version
       description: Use the app version, release tag, or commit SHA.
-      placeholder: 0.1.0-beta.11
+      placeholder: 0.1.0-beta.12
     validations:
       required: true
   - type: dropdown
