@@ -113,7 +113,7 @@ still import `APPLE_CERTIFICATE` from repository secrets.
 Manual releases can be started with:
 
 ```sh
-gh workflow run release.yml --ref v0.1.0-beta.11 -f runner_mode=auto
+gh workflow run release.yml --ref v0.1.0-beta.12 -f runner_mode=auto
 ```
 
 Use `runner_mode=self-hosted` only when every required platform runner is online.

@@ -239,7 +239,38 @@ jobs:
           releaseDraft: true
           prerelease: true
           args: "--ci"
+      - name: Notarize and staple macOS disk image
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          shopt -s nullglob
+          disk_images=(target/release/bundle/dmg/*.dmg)
+
+          if [[ "${#disk_images[@]}" -ne 1 ]]; then
+            echo "Expected exactly one macOS DMG to notarize." >&2
+            exit 1
+          fi
+
+          xcrun notarytool submit "${disk_images[0]}" \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait
+          xcrun stapler staple "${disk_images[0]}"
+          gh release upload "$RELEASE_TAG" "${disk_images[0]}" \
+            --repo "$GH_REPO" \
+            --clobber
       - name: Verify macOS signature and notarization ticket
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.ref_name }}
         shell: bash
         run: |
           shopt -s nullglob
@@ -253,13 +284,23 @@ jobs:
 
           codesign --verify --deep --strict --verbose=2 "${app_bundles[0]}"
           spctl --assess --type exec --verbose=4 "${app_bundles[0]}"
-          xcrun stapler validate "${disk_images[0]}"
+          asset_name="$(basename "${disk_images[0]}")"
+          published_dmg="$RUNNER_TEMP/published-$asset_name"
+          gh release download "$RELEASE_TAG" \
+            --repo "$GH_REPO" \
+            --pattern "$asset_name" \
+            --output "$published_dmg"
+          if ! cmp --silent "${disk_images[0]}" "$published_dmg"; then
+            echo "The uploaded DMG does not match the notarized local artifact." >&2
+            exit 1
+          fi
+          xcrun stapler validate "$published_dmg"
           spctl \
             --assess \
             --type open \
             --context context:primary-signature \
             --verbose=4 \
-            "${disk_images[0]}"
+            "$published_dmg"
       - name: Remove temporary macOS signing keychain
         if: always() && needs.runner-plan.outputs.macos_runner_kind == 'hosted'
         shell: bash
