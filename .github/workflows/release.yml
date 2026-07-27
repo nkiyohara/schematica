@@ -202,7 +202,7 @@ jobs:
             -k "$KEYCHAIN_PASSWORD" \
             "$keychain_path"
           security find-identity -v -p codesigning "$keychain_path"
-      - uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # v0
+      - uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
@@ -364,7 +364,7 @@ jobs:
           printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import
           gpg --batch --list-secret-keys --keyid-format LONG "${{ vars.GPG_FINGERPRINT }}"
           echo "GNUPGHOME=$GNUPGHOME" >> "$GITHUB_ENV"
-      - uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # v0
+      - uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SIGN: "1"
